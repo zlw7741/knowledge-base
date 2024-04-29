@@ -1,0 +1,90 @@
+
+用户权限设计
+概要：用户用户在管理系统中，对页面权限或数据权限进行控制
+基本表：
+1.用户表 （含部门ID）
+2.机构/部门表 （部门ID、父部门ID）
+3.模块表
+4.角色表（含模块ID）
+5.用户与角色关联表
+6.角色权限关联表（含菜单ID、及这个菜单有增删查改哪些权限）
+7.菜单权限配置表（模块的左边菜单树配置表，含模块ID）
+8.菜单树配置表 （模块ID、前一个菜单ID（排序用）、关联菜单、父菜单ID）
+
+1.用户表 sys_user_info
+user_id、user_name、password、nickname、email、dept_id(部门id)、sex、status、mobile
+2.部门表 sys_department
+dept_id、parent_dept_id、dept_name、dept_desc、status
+查询部门下的所有子部门：
+SELECT t3.dept_id, t3.parent_dept_id, t3.dept_name, t3.dept_status FROM ( SELECT *, IF (find_in_set(t1.parent_dept_id, @p) >0,@p:= concat(@p,',',dept_id),0) AS childId FROM (SELECT * FROM smt_adm.smt_sysauth_department t ORDER BY parent_dept_id,dept_id) t1, (SELECT @p:= #{deptId,jdbcType=INTEGER} ) t2 ) t3 WHERE childId != 0;
+
+3.模块表 sys_module
+module_id、module_name、url(模块跳转链接，前端用)、order_by排序、type(类型1嵌入模块，2系统模块)、status、img(模块图片)
+module_id：模块id 例：scoreSystem
+module_name： 模块名称 例：jf管理系统
+url：跳转到的首页
+order_by：排序，例：8
+type:类型，例：1
+img:模块名称
+
+4.角色表 sys_role_info
+role_id、role_name、status、role_desc备注、module_id(模块id)、dept_id(部门id)
+5.用户与角色关联表 sys_user_role_relation
+id、user_id、role_id
+6.角色与权限关联表 sys_role_action_relation
+id、role_id、permissions(接口操作权限)、action_belong_menu(权限所属菜单ID)
+例子：
+action_belong_menu：page-service-overview 服务概览菜单
+permissions：["page-service-overview_query","page-service-overview_add"] 拥有查询和新增权限
+7.菜单权限配置表（菜单数据管理可管理主菜单和关联菜单） sys_menu_action  业务必须跟模块绑定
+id、menu_id、menu_name、function_name、menu_url、actions、status、menu_related、module_id
+说明：
+menu_id：菜单id,例：page-service-overview
+menu_name:菜单名称，例：服务概览
+function_name：功能名称，例：服务概览
+menu_url：菜单路径，前端路径。例：/service/overview 
+actions：权限配置。例：[{"name":"查询","menuId"："page-service-overview_query"},{"name":"新增","menuId"："page-service-overview_add"}]
+status:状态 初始 启用 禁用
+menu_related：关联菜单。如果需要在界面新增按钮，跳转到新的页面，该字段则是跳转相关参数。
+    例：[{"hideInMenu":true,"path":"/points/addDistributionPlan","nav":"创建发放计划","exact":true,"name":"addDistributionPlan","relateMenuId":"page-points-distribution"}]
+    hideInMenu:
+    path:菜单路径
+    nav:菜单nav
+    exact:
+    name:菜单名称
+    relateMenuId:关联菜单ID
+module_id：模块ID
+    
+8.菜单树配置表 
+id、menu_id、name、nav、icon、path、authority、prent_menu_id、related_menu_id、hide_in_menu、exact、module_id、per_menu_id
+说明：
+menu_id：菜单ID，例：page-service-overview
+name：菜单名称 例：基础设置
+nav:中文名称，例：服务概览
+icon：icon 例：form
+path：页面地址 例：/service/overview
+authority:权限 例：page-service-overview_query
+prent_menu_id：父菜单ID 例：dist-setting
+related_menu_id：关联菜单ID 例：page-points-distribution
+hide_in_menu:隐藏菜单。 1隐藏。例：1
+exact： 例：1
+module_id：模块ID。scoreSystem
+per_menu_id: 前一个节点菜单ID。page-service-overview
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
